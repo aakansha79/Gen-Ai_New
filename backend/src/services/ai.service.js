@@ -1,16 +1,25 @@
-const  {GoogleGenAI} =require ("@google/genai")
+const { GoogleGenAI } = require("@google/genai")
 const { z } = require("zod")
 const {zodToJsonSchema} = require ("zod-to-json-schema")
 const puppeteer = require("puppeteer")
  
 const apiKey =
     process.env.GOOGLE_GENAI_API_KEY ||
-    process.env["GOOGLE_GENAI_API_KEY "] ||
     process.env.GOOGLE_API_KEY
 
-const ai  = new GoogleGenAI({
-    apiKey
-})
+let ai = null
+
+function getAiClient() {
+    if (!apiKey) {
+        return null
+    }
+
+    if (!ai) {
+        ai = new GoogleGenAI({ apiKey })
+    }
+
+    return ai
+}
 
 const textModel = "gemini-2.5-flash"
 
@@ -200,8 +209,23 @@ function buildFallbackResumeHtml({ resume = "", selfDescription = "", jobDescrip
     `
 }
 
+function normalizeInterviewReportPayload(parsed = {}) {
+    return {
+        ...parsed,
+        technicalQuestion: parsed.technicalQuestion || parsed.technicalQuestions || [],
+        behaviouralQuestion:
+            parsed.behaviouralQuestion ||
+            parsed.behaviourQuestions ||
+            parsed.behavioralQuestion ||
+            parsed.behavioralQuestions ||
+            []
+    }
+}
+
 async function generateInterviewReport({resume, selfDescription, jobDescription}){
-    if (!apiKey) {
+    const client = getAiClient()
+
+    if (!client) {
         return buildFallbackInterviewReport({ resume, selfDescription, jobDescription })
     }
 
@@ -210,7 +234,7 @@ async function generateInterviewReport({resume, selfDescription, jobDescription}
                     Self describe:${selfDescription}
                     Job describe:${jobDescription} `
     try {
-        const  response = await ai.models.generateContent({
+        const  response = await client.models.generateContent({
             model: textModel,
             contents: prompt,
             config:{
@@ -220,10 +244,10 @@ async function generateInterviewReport({resume, selfDescription, jobDescription}
         })
 
         const parsed = JSON.parse(response.text)
-        return mergeInterviewReportWithFallback({
-            ...parsed,
-            behaviouralQuestion: parsed.behaviouralQuestion || parsed.behaviourQuestions || []
-        }, { resume, selfDescription, jobDescription })
+        return mergeInterviewReportWithFallback(
+            normalizeInterviewReportPayload(parsed),
+            { resume, selfDescription, jobDescription }
+        )
     } catch (error) {
         console.error("AI interview generation failed, using fallback:", error.message)
         return buildFallbackInterviewReport({ resume, selfDescription, jobDescription })
@@ -233,17 +257,25 @@ async function generatePdfFromHtml(htmlContent){
     const browser = await puppeteer.launch({
         headless: true
     })
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, {waitUntil: "networkidle0"})
 
-    const pdfBuffer = await page.pdf({
-        format: "A4",})
-        await browser.close()
+    try {
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, {waitUntil: "networkidle0"})
+
+        const pdfBuffer = await page.pdf({
+            format: "A4",
+        })
+
         return pdfBuffer
+    } finally {
+        await browser.close()
     }
+}
 
 async function generateResumePdf({resume, selfDescription, jobDescription}) {
-    if (!apiKey) {
+    const client = getAiClient()
+
+    if (!client) {
         return generatePdfFromHtml(buildFallbackResumeHtml({ resume, selfDescription, jobDescription }))
     }
 
@@ -263,7 +295,7 @@ async function generateResumePdf({resume, selfDescription, jobDescription}) {
                     `
 
     try {
-        const response = await ai.models.generateContent({
+        const response = await client.models.generateContent({
             model: textModel,
             contents: prompt,
             config:{
@@ -272,7 +304,12 @@ async function generateResumePdf({resume, selfDescription, jobDescription}) {
             }
         })
         const JsonContent = JSON.parse(response.text)
-        const pdfBuffer = await generatePdfFromHtml(JsonContent.html)
+        const htmlContent =
+            typeof JsonContent?.html === "string" && JsonContent.html.trim()
+                ? JsonContent.html
+                : buildFallbackResumeHtml({ resume, selfDescription, jobDescription })
+
+        const pdfBuffer = await generatePdfFromHtml(htmlContent)
         return pdfBuffer
     } catch (error) {
         console.error("AI resume generation failed, using fallback:", error.message)

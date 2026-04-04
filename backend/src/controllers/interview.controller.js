@@ -1,4 +1,5 @@
-const pdfParse = require("pdf-parse")
+const mongoose = require("mongoose")
+const { PDFParse } = require("pdf-parse")
 const {generateInterviewReport, generateResumePdf} = require("../services/ai.service")
 const  interviewReportModel= require("../models/interviewReport.model")
 
@@ -42,8 +43,14 @@ async function generateInterviewReportController(req,res){
                 })
             }
 
-            const resumeContent = await (new pdfParse.PDFParse(Uint8Array.from(req.file.buffer))).getText()
-            resumeText = resumeContent.text || ""
+            const parser = new PDFParse({ data: req.file.buffer })
+
+            try {
+                const resumeContent = await parser.getText()
+                resumeText = resumeContent.text || ""
+            } finally {
+                await parser.destroy()
+            }
         }
 
         const interviewReportByAi = await generateInterviewReport({
@@ -82,40 +89,67 @@ async function generateInterviewReportController(req,res){
 }
 
 async function getInterviewReportController(req,res){
-    const { id } = req.params
+    try {
+        const { id } = req.params
 
-    if (!id) {
-        return res.status(400).json({
-            message: "Interview report id is required"
+        if (!id) {
+            return res.status(400).json({
+                message: "Interview report id is required"
+            })
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                message: "Invalid interview report id"
+            })
+        }
+
+        const interviewReport = await interviewReportModel.findOne({ _id: id, user: req.user.id })
+        if(!interviewReport){
+            return res.status(404).json({
+                message: "Interview report not found"
+            })
+        }
+
+        res.status(200).json({
+            message: "Interview report fetched successfully",
+            interviewReport
+        })
+    } catch (error) {
+        console.error("getInterviewReportController error:", error)
+        res.status(500).json({
+            message: error.message || "Failed to fetch interview report"
         })
     }
-
-    const interviewReport = await interviewReportModel.findOne({_id: id, user: req.user.id})
-    if(!interviewReport){
-        return res.status(404).json({
-            message: "interview report not found"
-        })
-    }
-    res.status(200).json({
-        message: "Interview report fetched successfully",
-         interviewReport
-    })
 }
 
 async function getAllInterviewReportsController(req,res){
-    const interviewReports = await interviewReportModel
-        .find({user: req.user.id})
-        .sort({createdAt: -1})
-        .select("-resume -selfDescription -jobDescription -__v")
+    try {
+        const interviewReports = await interviewReportModel
+            .find({user: req.user.id})
+            .sort({createdAt: -1})
+            .select("-resume -selfDescription -jobDescription -__v")
 
-    res.status(200).json({
-        message: "Interview reports fetched successfully.",
-        interviewReports
-    })
+        res.status(200).json({
+            message: "Interview reports fetched successfully.",
+            interviewReports
+        })
+    } catch (error) {
+        console.error("getAllInterviewReportsController error:", error)
+        res.status(500).json({
+            message: error.message || "Failed to fetch interview reports"
+        })
+    }
 }
 async function generateResumePdfController(req,res){
     try {
         const {interviewReportId} = req.params
+
+        if (!mongoose.Types.ObjectId.isValid(interviewReportId)) {
+            return res.status(400).json({
+                message: "Invalid interview report id"
+            })
+        }
 
         const interviewReport = await interviewReportModel.findOne({
             _id: interviewReportId,
@@ -132,7 +166,7 @@ async function generateResumePdfController(req,res){
         const pdfBuffer = await generateResumePdf({resume, selfDescription, jobDescription})
         res.set({
             "Content-Type": "application/pdf",
-            "content-Disposition": `attachment; filename="${interviewReportId}.pdf"`
+            "Content-Disposition": `attachment; filename="${interviewReportId}.pdf"`
         })
         res.send(pdfBuffer)
     } catch (error) {
