@@ -6,8 +6,8 @@ const app = express()
 
 app.use(cors({
     origin: [
-        "http://localhost:5174",
-        "https://your-frontend.onrender.com",
+        "https://gen-ai-1-syk7.onrender.com", 
+       
     ],
     credentials: true
 }))
