@@ -82,9 +82,9 @@ async function loginUserController(req, res) {
     try {
         let { email, password } = req.body
 
-        console.log("LOGIN BODY:", req.body)
+        //console.log("LOGIN BODY:", req.body)
 
-        // 🔥 DEFENSIVE FIX (your earlier bug)
+        //  DEFENSIVE FIX (your earlier bug)
         if (typeof email === "object") {
             password = email.password
             email = email.email
