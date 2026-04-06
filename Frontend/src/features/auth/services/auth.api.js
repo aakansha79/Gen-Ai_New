@@ -1,50 +1,42 @@
-/* eslint-disable */
 import axios from "axios"
 
+const baseURL = import.meta.env.VITE_API_URL?.trim() || "http://localhost:3000"
+
 const api = axios.create({
-    baseURL: "https://your-backend.onrender.com",
-    withCredentials: true
+  baseURL,
+  withCredentials: true
 })
 
-// Fixed: 'user' → 'username' (backend username expect karta hai)
-export async function register({ username, email, password }) {
-    try {
-        const response = await api.post("/api/auth/register", {
-            username, email, password   // Fixed: 'user' → 'username'
-        })
-        return response.data
-    } catch (err) {
-        throw err   // Fixed: throw karo taaki UI mein error show ho
-    }
+const normalizeError = (error) => {
+  const message =
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    "An unexpected error occurred."
+
+  return Promise.reject(new Error(message))
 }
 
-export async function login({ email, password }) {
-    try {
+export const register = (payload) =>
+  api
+    .post("/api/auth/register", payload)
+    .then((response) => response.data)
+    .catch(normalizeError)
 
-        const response = await api.post("/api/auth/login", {
-            email, password
-        })
-        return response.data
-    } catch (err) {
-        throw err   // Fixed: throw karo
-    }
-}
+export const login = (payload) =>
+  api
+    .post("/api/auth/login", payload)
+    .then((response) => response.data)
+    .catch(normalizeError)
 
-// Fixed: GET → POST (humne backend mein logout POST kiya tha)
-export async function logout() {
-    try {
-        const response = await api.post("/api/auth/logout")  // Fixed: GET → POST
-        return response.data
-    } catch (err) {
-        throw err   // Fixed: empty catch tha, throw karo
-    }
-}
+export const logout = () =>
+  api
+    .post("/api/auth/logout")
+    .then((response) => response.data)
+    .catch(normalizeError)
 
-export async function getMe() {
-    try {
-        const response = await api.get("/api/auth/get-me")
-        return response.data
-    } catch (err) {
-        throw err
-    }
-}
+export const getMe = () =>
+  api
+    .get("/api/auth/get-me")
+    .then((response) => response.data)
+    .catch(normalizeError)

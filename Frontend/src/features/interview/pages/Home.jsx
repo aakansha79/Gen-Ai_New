@@ -3,6 +3,7 @@ import "../style/home.scss"
 import { useInterview } from '../hooks/useInterview'
 import { useNavigate } from 'react-router-dom'
 import LoadingScreen from '../../../components/LoadingScreen'
+import LogoutButton from '../../auth/component/LogoutButton'
 
 /**
  * UI LAYER - Home Page (Interview Plan Generator)
@@ -50,12 +51,17 @@ const Home = () => {
             {loading && <LoadingScreen />}
             {/* HEADER SECTION */}
             <div className="header-section">
-                <h1>
-                    Create Your Custom <span className="highlight-text">Interview Plan</span>
-                </h1>
-                <p className="subtitle">
-                    Let our AI analyze the job requirements and your unique profile to build a winning strategy.
-                </p>
+                <div className="header-top">
+                    <div className="header-text">
+                        <h1>
+                            Create Your Custom <span className="highlight-text">Interview Plan</span>
+                        </h1>
+                        <p className="subtitle">
+                            Let our AI analyze the job requirements and your unique profile to build a winning strategy.
+                        </p>
+                    </div>
+                    <LogoutButton />
+                </div>
             </div>
 
             {/* MAIN CONTENT */}

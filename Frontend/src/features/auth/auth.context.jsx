@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect } from "react"
-import { getMe } from "./services/authApi"
+import { getMe } from "./services/auth.api"
 
 export const AuthContext = createContext()
 

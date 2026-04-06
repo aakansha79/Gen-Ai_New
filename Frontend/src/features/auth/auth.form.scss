@@ -42,4 +42,13 @@ main{
         color: #e1034d;
         text-decoration: none;
     }
+    .form-error {
+        background: #ffe9e9;
+        color: #b00020;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+        margin: 0.75rem 0;
+        font-size: 0.9rem;
+        border: 1px solid rgba(176, 0, 32, 0.2);
+    }
 }

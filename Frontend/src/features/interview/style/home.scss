@@ -11,28 +11,71 @@
 
     /* HEADER SECTION */
     .header-section {
-        text-align: center;
+        width: 100%;
         margin-bottom: 3rem;
-        max-width: 800px;
+        max-width: 900px;
 
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: white;
-            margin: 0 0 1rem 0;
-            line-height: 1.2;
+        .header-top {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
 
-            .highlight-text {
-                color: #e91e63;
-                font-weight: 800;
+        .header-text {
+            text-align: left;
+            flex: 1;
+            min-width: 250px;
+
+            h1 {
+                font-size: 2.5rem;
+                font-weight: 700;
+                color: white;
+                margin: 0 0 1rem 0;
+                line-height: 1.2;
+
+                .highlight-text {
+                    color: #e91e63;
+                    font-weight: 800;
+                }
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+                color: #a0a0a8;
+                margin: 0;
+                line-height: 1.6;
             }
         }
 
-        .subtitle {
-            font-size: 1.1rem;
-            color: #a0a0a8;
-            margin: 0;
-            line-height: 1.6;
+        .logout-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+
+            .logout-button {
+                border-radius: 0.75rem;
+                border: 1px solid rgba(255, 255, 255, 0.35);
+                background: rgba(255, 255, 255, 0.08);
+                color: #ffffff;
+                font-weight: 600;
+                min-width: 140px;
+                text-transform: uppercase;
+            }
+
+            .logout-button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+            .logout-error {
+                color: #ff8a80;
+                font-size: 0.85rem;
+                margin: 0;
+            }
         }
     }
 
