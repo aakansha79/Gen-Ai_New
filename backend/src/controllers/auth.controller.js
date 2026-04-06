@@ -3,9 +3,19 @@ const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
 const tokenBlacklistModel = require("../models/blacklist.model")
 
+const handleOptions = (req, res) => {
+    if (req.method === "OPTIONS") {
+        res.sendStatus(200)
+        return true
+    }
+    return false
+}
+
 // ================= REGISTER =================
 async function registerUserController(req, res) {
     try {
+        if (handleOptions(req, res)) return
+
         const { username, email, password } = req.body
 
         console.log("REGISTER BODY:", req.body)
@@ -55,8 +65,8 @@ async function registerUserController(req, res) {
         // 6. Set cookie (IMPORTANT FIX)
         res.cookie("token", token, {
             httpOnly: true,
-            secure: false, // true in production (HTTPS)
-            sameSite: "lax"
+            secure: true,
+            sameSite: "none"
         })
 
         return res.status(201).json({
@@ -80,6 +90,8 @@ async function registerUserController(req, res) {
 // ================= LOGIN =================
 async function loginUserController(req, res) {
     try {
+        if (handleOptions(req, res)) return
+
         let { email, password } = req.body
 
         //console.log("LOGIN BODY:", req.body)
@@ -124,8 +136,8 @@ async function loginUserController(req, res) {
         // 4. Set cookie
         res.cookie("token", token, {
             httpOnly: true,
-            secure: false,
-            sameSite: "lax"
+            secure: true,           // ALWAYS TRUE on Render (HTTPS)
+            sameSite: "none" 
         })
 
         return res.status(200).json({
@@ -149,13 +161,19 @@ async function loginUserController(req, res) {
 // ================= LOGOUT =================
 async function logoutUserController(req, res) {
     try {
+        if (handleOptions(req, res)) return
+
         const token = req.cookies.token
 
         if (token) {
             await tokenBlacklistModel.create({ token })
         }
 
-        res.clearCookie("token")
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none"
+        });
 
         return res.status(200).json({
             message: "User logged out successfully"
@@ -173,6 +191,8 @@ async function logoutUserController(req, res) {
 // ================= GET ME =================
 async function getMeController(req, res) {
     try {
+        if (handleOptions(req, res)) return
+
         const user = await userModel.findById(req.user.id)
 
         return res.status(200).json({
